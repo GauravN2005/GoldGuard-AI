@@ -17,7 +17,12 @@ function ProfileView() {
   const branches = useApp((s) => s.branches);
   const drafts = useApp((s) => s.drafts);
   const mode = useApp((s) => s.mode);
-  const syncDrafts = useApp((s) => s.syncDrafts);
+  
+  const isSyncing = useApp((s) => s.isSyncing);
+  const syncProgress = useApp((s) => s.syncProgress);
+  const lastSyncedAt = useApp((s) => s.lastSyncedAt);
+  const triggerSync = useApp((s) => s.triggerSync);
+
   const [form, setForm] = useState({ ...profile });
 
   const save = () => { update(form); toast.success("Profile updated"); };
@@ -68,21 +73,62 @@ function ProfileView() {
       </div>
 
       <GlassCard className="p-6 mt-6">
-        <div className="flex items-center justify-between mb-4">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6 border-b border-black/5 pb-4">
           <div>
-            <h3 className="text-lg font-bold">Offline Drafts</h3>
-            <p className="text-xs text-foreground/55">{drafts.length} pending • Mode: {mode}</p>
+            <h3 className="text-lg font-bold">Offline Sync Control Panel</h3>
+            <p className="text-xs text-foreground/55">
+              {drafts.length} draft{drafts.length === 1 ? "" : "s"} queued • Cache status: {mode === "offline" ? "Offline Cache" : "Online Connected"}
+            </p>
           </div>
-          {drafts.length > 0 && <button onClick={() => { syncDrafts(); toast.success("Drafts synced"); }} className="h-10 px-4 rounded-xl bg-[color:var(--gold)] text-white text-sm font-semibold">Sync Now</button>}
+          <div className="flex items-center gap-3">
+            {lastSyncedAt && (
+              <span className="text-[10px] text-foreground/45 font-semibold">
+                Last Synced: {new Date(lastSyncedAt).toLocaleTimeString("en-IN", { hour: "2-digit", minute: "2-digit", second: "2-digit", day: "2-digit", month: "short" })}
+              </span>
+            )}
+            {drafts.length > 0 && (
+              <button
+                onClick={triggerSync}
+                disabled={isSyncing}
+                className="h-11 px-5 rounded-xl bg-[color:var(--gold)] text-white text-sm font-semibold flex items-center gap-2 hover:brightness-110 transition disabled:opacity-50 shadow-md shadow-[color:var(--gold)]/10"
+              >
+                {isSyncing ? (
+                  <>
+                    <div className="size-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                    Syncing...
+                  </>
+                ) : (
+                  "Sync Queue Now"
+                )}
+              </button>
+            )}
+          </div>
         </div>
-        {drafts.length === 0 ? <div className="text-sm text-foreground/50">No drafts. New inspections saved offline will appear here.</div> : (
+
+        {isSyncing && (
+          <div className="mb-6 p-4 rounded-xl bg-[color:var(--gold)]/5 border border-[color:var(--gold)]/15 space-y-3">
+            <div className="flex justify-between text-xs font-semibold">
+              <span className="text-[color:var(--gold)] font-bold">Synchronizing Offline Queue...</span>
+              <span className="text-foreground">{syncProgress}%</span>
+            </div>
+            <div className="h-2 bg-black/5 rounded-full overflow-hidden">
+              <div className="h-full bg-[color:var(--gold)] transition-all duration-300" style={{ width: `${syncProgress}%` }} />
+            </div>
+          </div>
+        )}
+
+        {drafts.length === 0 ? (
+          <div className="text-sm text-foreground/50 text-center py-6">
+            No offline drafts found. New inspections created while in Offline Mode will accumulate here.
+          </div>
+        ) : (
           <div className="space-y-2">
             {drafts.map((d) => (
-              <div key={d.id} className="flex items-center gap-3 p-3 rounded-xl bg-white/60 border border-black/5">
-                <div className="text-xs text-foreground/55 font-mono">{d.id}</div>
+              <div key={d.id} className="flex items-center gap-3 p-3 rounded-xl bg-white/60 border border-black/5 hover:bg-white/80 transition">
+                <div className="text-xs text-foreground/55 font-mono bg-black/5 px-2 py-1 rounded-md">{d.id}</div>
                 <div className="flex-1">
-                  <div className="text-sm font-semibold">{d.customerName} — {d.jewelryType}</div>
-                  <div className="text-[11px] text-foreground/55">Step {d.step + 1} • Saved {new Date(d.savedAt).toLocaleString()}</div>
+                  <div className="text-sm font-bold">{d.customerName} — {d.jewelryType}</div>
+                  <div className="text-[11px] text-foreground/55">Step {d.step + 1} • Saved {new Date(d.savedAt).toLocaleString("en-IN")} • {d.weight}g</div>
                 </div>
               </div>
             ))}

@@ -26,6 +26,9 @@ interface AppState {
   mode: "online" | "offline";
   drafts: DraftInspection[];
   pendingSync: number;
+  isSyncing: boolean;
+  syncProgress: number;
+  lastSyncedAt: string | null;
 
   addInspection: (i: Inspection) => void;
   updateInspection: (id: string, patch: Partial<Inspection>) => void;
@@ -45,6 +48,7 @@ interface AppState {
   saveDraft: (d: DraftInspection) => void;
   removeDraft: (id: string) => void;
   syncDrafts: () => void;
+  triggerSync: () => void;
 }
 
 export const useApp = create<AppState>((set) => ({
@@ -58,6 +62,9 @@ export const useApp = create<AppState>((set) => ({
   mode: "online",
   drafts: [],
   pendingSync: 0,
+  isSyncing: false,
+  syncProgress: 0,
+  lastSyncedAt: new Date(Date.now() - 3600000 * 4).toISOString(), // 4 hours ago default
 
   addInspection: (i) => set((s) => ({ inspections: [i, ...s.inspections] })),
   updateInspection: (id, patch) =>
@@ -114,5 +121,63 @@ export const useApp = create<AppState>((set) => ({
     const drafts = s.drafts.filter((x) => x.id !== id);
     return { drafts, pendingSync: drafts.length };
   }),
-  syncDrafts: () => set({ drafts: [], pendingSync: 0 }),
+  syncDrafts: () => set({ drafts: [], pendingSync: 0, isSyncing: false, syncProgress: 0 }),
+
+  triggerSync: () => {
+    const state = useApp.getState();
+    if (state.drafts.length === 0 || state.isSyncing) return;
+
+    set({ isSyncing: true, syncProgress: 0 });
+
+    const timer = setInterval(() => {
+      set((s) => {
+        if (s.syncProgress >= 100) {
+          clearInterval(timer);
+
+          // Add synchronized inspections to database
+          const newInspections = s.drafts.map((d) => ({
+            id: d.id,
+            customerId: `CUS-${Math.floor(20000 + Math.random() * 10000)}`,
+            customerName: d.customerName,
+            contact: "+91 98200 12345",
+            jewelryType: d.jewelryType as any,
+            purity: "22K" as any,
+            description: `${d.jewelryType} created offline`,
+            weight: d.weight,
+            length: 45,
+            width: 15,
+            thickness: 1.5,
+            branch: s.profile.branch,
+            appraiser: s.profile.name,
+            date: new Date().toISOString(),
+            status: "Genuine" as any,
+            authenticityScore: 95,
+            riskScore: 5,
+            confidence: 96,
+            qualityScore: 92,
+            lighting: 88,
+            focus: 94,
+            angleCoverage: 90,
+            factors: { density: 95, surface: 94, reflection: 96, touchstone: 94, visualDefect: 92 },
+            images: {},
+            notes: "Synchronized from offline draft.",
+            loan: { decision: "Pending" as any, ltv: 75, amount: Math.round(d.weight * 7200 * 0.916 * 0.75), marketRate: 7200 },
+            audit: [
+              { ts: new Date().toISOString(), actor: s.profile.name, action: "Inspection Synchronized", detail: "Uploaded from offline storage cache" }
+            ]
+          }));
+
+          return {
+            isSyncing: false,
+            syncProgress: 0,
+            lastSyncedAt: new Date().toISOString(),
+            inspections: [...newInspections, ...s.inspections],
+            drafts: [],
+            pendingSync: 0
+          };
+        }
+        return { syncProgress: s.syncProgress + 10 };
+      });
+    }, 250);
+  }
 }));

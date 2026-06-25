@@ -1,5 +1,5 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
-import { useMemo, useState } from "react";
+import { useMemo, useState, useEffect } from "react";
 import { AppHeader } from "@/components/app-header";
 import { GlassCard, StatusChip } from "@/components/glass";
 import { useApp } from "@/stores/app-store";
@@ -16,7 +16,50 @@ const STATUSES = ["All", "Genuine", "Low Risk", "Suspicious", "High Risk", "Pend
 const TYPES = ["All", "Necklace", "Bangle", "Ring", "Chain", "Earring", "Coin", "Pendant"];
 const PAGE_SIZE = 10;
 
+function HistorySkeleton() {
+  return (
+    <div className="animate-pulse space-y-6">
+      {/* Header Skeleton */}
+      <div className="flex justify-between items-center mb-8">
+        <div className="space-y-2">
+          <div className="h-4 w-32 bg-black/5 rounded-md shimmer" />
+          <div className="h-8 w-60 bg-black/5 rounded-lg shimmer" />
+        </div>
+        <div className="h-11 w-32 bg-black/5 rounded-2xl shimmer" />
+      </div>
+
+      {/* Filter panel skeleton */}
+      <div className="h-16 bg-black/5 rounded-2xl p-4 shimmer mb-6 flex gap-3">
+        <div className="h-9 w-32 bg-black/5 rounded-xl" />
+        <div className="h-9 w-32 bg-black/5 rounded-xl" />
+        <div className="h-9 w-24 bg-black/5 rounded-xl" />
+      </div>
+
+      {/* Table skeleton */}
+      <div className="bg-black/5 rounded-3xl p-6 shimmer space-y-4">
+        {Array.from({ length: 10 }).map((_, idx) => (
+          <div key={idx} className="flex justify-between items-center border-b border-black/5 pb-4">
+            <div className="space-y-2 flex-1">
+              <div className="h-4 w-1/3 bg-black/5 rounded-md" />
+              <div className="h-3 w-1/4 bg-black/5 rounded-md" />
+            </div>
+            <div className="h-4 w-20 bg-black/5 rounded-md mr-12" />
+            <div className="h-6 w-16 bg-black/5 rounded-full mr-12" />
+            <div className="h-4 w-12 bg-black/5 rounded-md" />
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
+
 function HistoryPage() {
+  const [isLoading, setIsLoading] = useState(true);
+  useEffect(() => {
+    const t = setTimeout(() => setIsLoading(false), 500);
+    return () => clearTimeout(t);
+  }, []);
+
   const inspections = useApp((s) => s.inspections);
   const [search, setSearch] = useState("");
   const [status, setStatus] = useState("All");
@@ -58,6 +101,10 @@ function HistoryPage() {
     a.href = url; a.download = "inspection-history.csv"; a.click(); URL.revokeObjectURL(url);
     toast.success("History exported", { description: `${filtered.length} rows` });
   };
+
+  if (isLoading) {
+    return <HistorySkeleton />;
+  }
 
   return (
     <>

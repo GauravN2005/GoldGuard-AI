@@ -45,8 +45,11 @@ export function AppHeader({ title, subtitle, search, onSearch, searchPlaceholder
               value={v}
               onChange={(e) => set(e.target.value)}
               placeholder={searchPlaceholder}
-              className="w-full lg:w-80 h-11 glass rounded-2xl pl-11 pr-5 text-sm focus:outline-none focus:ring-2 focus:ring-[color:var(--gold)]/30"
+              className="w-full lg:w-80 h-11 glass rounded-2xl pl-11 pr-14 text-sm focus:outline-none focus:ring-2 focus:ring-[color:var(--gold)]/30"
             />
+            <div className="absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none hidden sm:flex items-center gap-0.5 px-1.5 py-0.5 rounded border border-black/10 bg-black/5 text-[9px] font-mono text-foreground/45 font-bold">
+              Ctrl+K
+            </div>
           </div>
         ) : null}
 

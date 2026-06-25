@@ -2,6 +2,7 @@ import { Link, useRouterState } from "@tanstack/react-router";
 import {
   LayoutDashboard, Plus, History, AlertTriangle, Users, Building2, Wallet,
   BarChart3, FileText, Bell, User, Settings as SettingsIcon, ShieldCheck, Wifi, WifiOff,
+  ShieldAlert, Briefcase, Coins, Sparkles
 } from "lucide-react";
 import { useApp } from "@/stores/app-store";
 import { cn } from "@/lib/utils";
@@ -14,21 +15,25 @@ const groups = [
       { to: "/inspection/new", label: "New Inspection", icon: Plus },
       { to: "/history", label: "History", icon: History },
       { to: "/escalations", label: "Escalations", icon: AlertTriangle },
+      { to: "/investigations", label: "Investigations", icon: ShieldAlert },
     ],
   },
   {
     label: "Management",
     items: [
       { to: "/manager", label: "Manager View", icon: ShieldCheck },
+      { to: "/executive-dashboard", label: "Executive View", icon: Briefcase },
       { to: "/branches", label: "Branches", icon: Building2 },
       { to: "/employees", label: "Employees", icon: Users },
       { to: "/portfolio", label: "Portfolio", icon: Wallet },
+      { to: "/customers", label: "Customers", icon: Users },
     ],
   },
   {
     label: "Insights",
     items: [
       { to: "/analytics", label: "Analytics", icon: BarChart3 },
+      { to: "/fraud-intelligence", label: "Fraud Intel", icon: Coins },
       { to: "/reports", label: "Reports", icon: FileText },
       { to: "/notifications", label: "Notifications", icon: Bell },
     ],
@@ -48,6 +53,8 @@ export function AppSidebar() {
   const setMode = useApp((s) => s.setMode);
   const pendingSync = useApp((s) => s.pendingSync);
   const unread = useApp((s) => s.notifications.filter((n) => !n.read).length);
+  const isSyncing = useApp((s) => s.isSyncing);
+  const syncProgress = useApp((s) => s.syncProgress);
 
   const isActive = (to: string, exact?: boolean) => (exact ? pathname === to : pathname === to || pathname.startsWith(to + "/"));
 
@@ -98,20 +105,32 @@ export function AppSidebar() {
         ))}
       </nav>
 
-      <button
-        onClick={() => setMode(mode === "online" ? "offline" : "online")}
-        className="mt-4 p-3 rounded-2xl bg-[color:var(--gold)]/8 border border-[color:var(--gold)]/20 text-left transition-all hover:bg-[color:var(--gold)]/12"
-      >
-        <div className="flex items-center justify-between">
+      <div className="mt-4 p-3 rounded-2xl bg-[color:var(--gold)]/8 border border-[color:var(--gold)]/20 text-left">
+        <button
+          onClick={() => !isSyncing && setMode(mode === "online" ? "offline" : "online")}
+          disabled={isSyncing}
+          className="w-full flex items-center justify-between hover:opacity-85 transition disabled:opacity-50"
+        >
           <div className="text-[10px] font-semibold uppercase tracking-widest text-[color:var(--gold)]">System Status</div>
           {mode === "online" ? <Wifi className="size-3.5 text-[color:var(--success)]" /> : <WifiOff className="size-3.5 text-[color:var(--warning)]" />}
-        </div>
+        </button>
         <div className="mt-1 text-xs font-medium flex items-center gap-2">
           <span className={cn("size-2 rounded-full", mode === "online" ? "bg-[color:var(--success)] animate-pulse" : "bg-[color:var(--warning)]")} />
           {mode === "online" ? "Online Mode" : "Offline Mode"}
-          {pendingSync > 0 && <span className="ml-auto text-[10px] text-[color:var(--warning)]">{pendingSync} pending</span>}
+          {pendingSync > 0 && <span className="ml-auto text-[10px] text-[color:var(--warning)] font-bold">{pendingSync} pending</span>}
         </div>
-      </button>
+        {isSyncing && (
+          <div className="mt-2.5 space-y-1">
+            <div className="flex justify-between text-[9px] font-bold text-[color:var(--gold)] leading-none">
+              <span>Syncing queue...</span>
+              <span>{syncProgress}%</span>
+            </div>
+            <div className="h-1 bg-black/5 rounded-full overflow-hidden">
+              <div className="h-full bg-[color:var(--gold)] transition-all duration-300" style={{ width: `${syncProgress}%` }} />
+            </div>
+          </div>
+        )}
+      </div>
     </aside>
   );
 }

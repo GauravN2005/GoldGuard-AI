@@ -15,9 +15,13 @@ import { Route as ProfileRouteImport } from './routes/profile'
 import { Route as PortfolioRouteImport } from './routes/portfolio'
 import { Route as NotificationsRouteImport } from './routes/notifications'
 import { Route as ManagerRouteImport } from './routes/manager'
+import { Route as InvestigationsRouteImport } from './routes/investigations'
 import { Route as HistoryRouteImport } from './routes/history'
+import { Route as FraudIntelligenceRouteImport } from './routes/fraud-intelligence'
+import { Route as ExecutiveDashboardRouteImport } from './routes/executive-dashboard'
 import { Route as EscalationsRouteImport } from './routes/escalations'
 import { Route as EmployeesRouteImport } from './routes/employees'
+import { Route as CustomersRouteImport } from './routes/customers'
 import { Route as BranchesRouteImport } from './routes/branches'
 import { Route as AnalyticsRouteImport } from './routes/analytics'
 import { Route as IndexRouteImport } from './routes/index'
@@ -54,9 +58,24 @@ const ManagerRoute = ManagerRouteImport.update({
   path: '/manager',
   getParentRoute: () => rootRouteImport,
 } as any)
+const InvestigationsRoute = InvestigationsRouteImport.update({
+  id: '/investigations',
+  path: '/investigations',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const HistoryRoute = HistoryRouteImport.update({
   id: '/history',
   path: '/history',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const FraudIntelligenceRoute = FraudIntelligenceRouteImport.update({
+  id: '/fraud-intelligence',
+  path: '/fraud-intelligence',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ExecutiveDashboardRoute = ExecutiveDashboardRouteImport.update({
+  id: '/executive-dashboard',
+  path: '/executive-dashboard',
   getParentRoute: () => rootRouteImport,
 } as any)
 const EscalationsRoute = EscalationsRouteImport.update({
@@ -67,6 +86,11 @@ const EscalationsRoute = EscalationsRouteImport.update({
 const EmployeesRoute = EmployeesRouteImport.update({
   id: '/employees',
   path: '/employees',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const CustomersRoute = CustomersRouteImport.update({
+  id: '/customers',
+  path: '/customers',
   getParentRoute: () => rootRouteImport,
 } as any)
 const BranchesRoute = BranchesRouteImport.update({
@@ -99,9 +123,13 @@ export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/analytics': typeof AnalyticsRoute
   '/branches': typeof BranchesRoute
+  '/customers': typeof CustomersRoute
   '/employees': typeof EmployeesRoute
   '/escalations': typeof EscalationsRoute
+  '/executive-dashboard': typeof ExecutiveDashboardRoute
+  '/fraud-intelligence': typeof FraudIntelligenceRoute
   '/history': typeof HistoryRoute
+  '/investigations': typeof InvestigationsRoute
   '/manager': typeof ManagerRoute
   '/notifications': typeof NotificationsRoute
   '/portfolio': typeof PortfolioRoute
@@ -115,9 +143,13 @@ export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/analytics': typeof AnalyticsRoute
   '/branches': typeof BranchesRoute
+  '/customers': typeof CustomersRoute
   '/employees': typeof EmployeesRoute
   '/escalations': typeof EscalationsRoute
+  '/executive-dashboard': typeof ExecutiveDashboardRoute
+  '/fraud-intelligence': typeof FraudIntelligenceRoute
   '/history': typeof HistoryRoute
+  '/investigations': typeof InvestigationsRoute
   '/manager': typeof ManagerRoute
   '/notifications': typeof NotificationsRoute
   '/portfolio': typeof PortfolioRoute
@@ -132,9 +164,13 @@ export interface FileRoutesById {
   '/': typeof IndexRoute
   '/analytics': typeof AnalyticsRoute
   '/branches': typeof BranchesRoute
+  '/customers': typeof CustomersRoute
   '/employees': typeof EmployeesRoute
   '/escalations': typeof EscalationsRoute
+  '/executive-dashboard': typeof ExecutiveDashboardRoute
+  '/fraud-intelligence': typeof FraudIntelligenceRoute
   '/history': typeof HistoryRoute
+  '/investigations': typeof InvestigationsRoute
   '/manager': typeof ManagerRoute
   '/notifications': typeof NotificationsRoute
   '/portfolio': typeof PortfolioRoute
@@ -150,9 +186,13 @@ export interface FileRouteTypes {
     | '/'
     | '/analytics'
     | '/branches'
+    | '/customers'
     | '/employees'
     | '/escalations'
+    | '/executive-dashboard'
+    | '/fraud-intelligence'
     | '/history'
+    | '/investigations'
     | '/manager'
     | '/notifications'
     | '/portfolio'
@@ -166,9 +206,13 @@ export interface FileRouteTypes {
     | '/'
     | '/analytics'
     | '/branches'
+    | '/customers'
     | '/employees'
     | '/escalations'
+    | '/executive-dashboard'
+    | '/fraud-intelligence'
     | '/history'
+    | '/investigations'
     | '/manager'
     | '/notifications'
     | '/portfolio'
@@ -182,9 +226,13 @@ export interface FileRouteTypes {
     | '/'
     | '/analytics'
     | '/branches'
+    | '/customers'
     | '/employees'
     | '/escalations'
+    | '/executive-dashboard'
+    | '/fraud-intelligence'
     | '/history'
+    | '/investigations'
     | '/manager'
     | '/notifications'
     | '/portfolio'
@@ -199,9 +247,13 @@ export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   AnalyticsRoute: typeof AnalyticsRoute
   BranchesRoute: typeof BranchesRoute
+  CustomersRoute: typeof CustomersRoute
   EmployeesRoute: typeof EmployeesRoute
   EscalationsRoute: typeof EscalationsRoute
+  ExecutiveDashboardRoute: typeof ExecutiveDashboardRoute
+  FraudIntelligenceRoute: typeof FraudIntelligenceRoute
   HistoryRoute: typeof HistoryRoute
+  InvestigationsRoute: typeof InvestigationsRoute
   ManagerRoute: typeof ManagerRoute
   NotificationsRoute: typeof NotificationsRoute
   PortfolioRoute: typeof PortfolioRoute
@@ -256,11 +308,32 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ManagerRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/investigations': {
+      id: '/investigations'
+      path: '/investigations'
+      fullPath: '/investigations'
+      preLoaderRoute: typeof InvestigationsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/history': {
       id: '/history'
       path: '/history'
       fullPath: '/history'
       preLoaderRoute: typeof HistoryRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/fraud-intelligence': {
+      id: '/fraud-intelligence'
+      path: '/fraud-intelligence'
+      fullPath: '/fraud-intelligence'
+      preLoaderRoute: typeof FraudIntelligenceRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/executive-dashboard': {
+      id: '/executive-dashboard'
+      path: '/executive-dashboard'
+      fullPath: '/executive-dashboard'
+      preLoaderRoute: typeof ExecutiveDashboardRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/escalations': {
@@ -275,6 +348,13 @@ declare module '@tanstack/react-router' {
       path: '/employees'
       fullPath: '/employees'
       preLoaderRoute: typeof EmployeesRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/customers': {
+      id: '/customers'
+      path: '/customers'
+      fullPath: '/customers'
+      preLoaderRoute: typeof CustomersRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/branches': {
@@ -319,9 +399,13 @@ const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   AnalyticsRoute: AnalyticsRoute,
   BranchesRoute: BranchesRoute,
+  CustomersRoute: CustomersRoute,
   EmployeesRoute: EmployeesRoute,
   EscalationsRoute: EscalationsRoute,
+  ExecutiveDashboardRoute: ExecutiveDashboardRoute,
+  FraudIntelligenceRoute: FraudIntelligenceRoute,
   HistoryRoute: HistoryRoute,
+  InvestigationsRoute: InvestigationsRoute,
   ManagerRoute: ManagerRoute,
   NotificationsRoute: NotificationsRoute,
   PortfolioRoute: PortfolioRoute,
@@ -334,3 +418,13 @@ const rootRouteChildren: RootRouteChildren = {
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
   ._addFileTypes<FileRouteTypes>()
+
+import type { getRouter } from './router.tsx'
+import type { startInstance } from './start.ts'
+declare module '@tanstack/react-start' {
+  interface Register {
+    ssr: true
+    router: Awaited<ReturnType<typeof getRouter>>
+    config: Awaited<ReturnType<typeof startInstance.getOptions>>
+  }
+}

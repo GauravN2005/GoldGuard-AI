@@ -3,7 +3,11 @@ import { useState } from "react";
 import { AppHeader } from "@/components/app-header";
 import { GlassCard, RadialGauge, RiskFactorBar, StatusChip } from "@/components/glass";
 import { useApp } from "@/stores/app-store";
-import { ArrowLeft, FileDown, Printer, ChevronRight, ChevronLeft, Shield, Sparkles, ScanEye, Microscope, FileText, History as HistoryIcon, IndianRupee, ListChecks, Send, Check, X, Image as ImageIcon, Clock } from "lucide-react";
+import {
+  ArrowLeft, FileDown, Printer, ChevronRight, ChevronLeft, Shield, Sparkles,
+  ScanEye, Microscope, FileText, History as HistoryIcon, IndianRupee, ListChecks,
+  Send, Check, X, Image as ImageIcon, Clock, RotateCcw, ShieldAlert, Activity
+} from "lucide-react";
 import { cn } from "@/lib/utils";
 import { toast } from "sonner";
 
@@ -14,6 +18,7 @@ export const Route = createFileRoute("/inspection/$id")({
 
 const TABS = [
   { id: "results", label: "Results", icon: Sparkles },
+  { id: "ai", label: "AI Analysis", icon: Microscope },
   { id: "risk", label: "Explainable Risk", icon: ScanEye },
   { id: "loan", label: "Loan Decision", icon: IndianRupee },
   { id: "replay", label: "Replay", icon: HistoryIcon },
@@ -35,6 +40,12 @@ function InspectionDetail() {
 
   if (!inspection) throw notFound();
 
+  // Shared AI scan simulation state
+  const [aiStatus, setAiStatus] = useState<"Awaiting" | "Processing" | "Completed">(
+    inspection.status === "Pending" ? "Awaiting" : "Completed"
+  );
+  const [aiProgress, setAiProgress] = useState(inspection.status === "Pending" ? 0 : 100);
+
   const ins = inspection;
   const cat = ins.status;
   const catColor = cat === "Genuine" ? "var(--success)" : cat === "Low Risk" ? "var(--gold)" : cat === "Suspicious" ? "var(--warning)" : cat === "High Risk" ? "var(--risk)" : "#9ca3af";
@@ -51,6 +62,9 @@ function InspectionDetail() {
           </>
         }
       />
+
+      {/* Feature 6 — Custom Milestone Timeline */}
+      <MilestoneTimeline inspection={ins} aiStatus={aiStatus} />
 
       <GlassCard className="p-2 mb-6 overflow-x-auto">
         <div className="flex gap-1 min-w-max">
@@ -115,7 +129,9 @@ function InspectionDetail() {
                 <div className="flex items-center gap-2">
                   <Microscope className="size-4 text-foreground/40" />
                   <h3 className="text-sm font-bold text-foreground/70">AI Analysis Engine</h3>
-                  <span className="text-[10px] font-bold uppercase tracking-widest text-foreground/40 px-2 py-0.5 rounded-full bg-foreground/5">Awaiting Backend</span>
+                  <span className="text-[10px] font-bold uppercase tracking-widest text-[color:var(--gold)] px-2 py-0.5 rounded-full bg-[color:var(--gold)]/10">
+                    {aiStatus}
+                  </span>
                 </div>
               </div>
               <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
@@ -126,14 +142,29 @@ function InspectionDetail() {
                 ].map((x) => (
                   <div key={x.l} className="p-3 rounded-xl bg-white/40 border border-black/5">
                     <div className="text-[10px] uppercase tracking-wider text-foreground/45 font-semibold">{x.l}</div>
-                    <div className="text-display text-2xl text-foreground/70 mt-1">{x.v}<span className="text-xs text-foreground/40">%</span></div>
-                    <div className="text-[10px] text-foreground/40 mt-1">Coming from Backend</div>
+                    <div className="text-display text-2xl text-foreground/70 mt-1">
+                      {aiStatus === "Completed" ? `${x.v}%` : aiStatus === "Processing" ? "..." : "Awaiting"}
+                    </div>
+                    <div className="text-[10px] text-foreground/40 mt-1">
+                      {aiStatus === "Completed" ? "Analyzed" : "Run AI Scan"}
+                    </div>
                   </div>
                 ))}
               </div>
             </GlassCard>
           </div>
         </div>
+      )}
+
+      {/* Feature 1 — AI Analysis Command Center */}
+      {tab === "ai" && (
+        <AiAnalysisTab
+          inspection={ins}
+          aiStatus={aiStatus}
+          setAiStatus={setAiStatus}
+          aiProgress={aiProgress}
+          setAiProgress={setAiProgress}
+        />
       )}
 
       {tab === "risk" && (
@@ -154,6 +185,7 @@ function InspectionDetail() {
         </GlassCard>
       )}
 
+      {/* Feature 2 — Gold Loan Decision Engine */}
       {tab === "loan" && (
         <LoanDecisionTab inspection={ins} onDecide={(d, ltv) => {
           decideLoan(ins.id, d, ltv);
@@ -204,19 +236,297 @@ function Stat({ label, value }: { label: string; value: string }) {
   );
 }
 
+// Milestone Timeline Component
+function MilestoneTimeline({ inspection, aiStatus }: { inspection: any; aiStatus: "Awaiting" | "Processing" | "Completed" }) {
+  const steps: { label: string; sub: string; status: "completed" | "active" | "pending"; ts?: string }[] = [
+    {
+      label: "Created",
+      sub: "Inspection registered",
+      status: "completed",
+      ts: inspection.audit[0]?.ts,
+    },
+    {
+      label: "Media Uploads",
+      sub: "5 angles + scans",
+      status: "completed",
+      ts: inspection.audit.find((a: any) => a.action.includes("Images"))?.ts || inspection.audit[3]?.ts || inspection.audit[0]?.ts,
+    },
+    {
+      label: "Measurements",
+      sub: "Weight & dimensions",
+      status: "completed",
+      ts: inspection.audit.find((a: any) => a.action.includes("Weight"))?.ts || inspection.audit[2]?.ts || inspection.audit[0]?.ts,
+    },
+    {
+      label: "AI Diagnostic Scan",
+      sub: aiStatus === "Completed" ? "Completed" : aiStatus === "Processing" ? "Scanning assets..." : "Pending scan",
+      status: aiStatus === "Completed" ? "completed" : aiStatus === "Processing" ? "active" : "pending",
+      ts: aiStatus === "Completed" ? new Date().toISOString() : undefined,
+    },
+    {
+      label: "Risk Calculation",
+      sub: aiStatus === "Completed" ? "Calculated" : "Awaiting AI scan",
+      status: aiStatus === "Completed" ? "completed" : "pending",
+      ts: aiStatus === "Completed" ? new Date().toISOString() : undefined,
+    },
+    {
+      label: "Report Ready",
+      sub: aiStatus === "Completed" ? "Report generated" : "Awaiting calculation",
+      status: aiStatus === "Completed" ? "completed" : "pending",
+      ts: aiStatus === "Completed" ? new Date().toISOString() : undefined,
+    },
+    {
+      label: "Appraiser Review",
+      sub: inspection.loan.decision !== "Pending" ? `Loan ${inspection.loan.decision}` : "Review pending",
+      status: inspection.loan.decision !== "Pending" ? "completed" : aiStatus === "Completed" ? "active" : "pending",
+      ts: inspection.loan.decision !== "Pending" ? inspection.audit.find((a: any) => a.action.includes("Loan"))?.ts : undefined,
+    },
+  ];
+
+  return (
+    <GlassCard className="p-5 mb-6 overflow-x-auto">
+      <div className="flex justify-between items-center min-w-[900px] relative px-4 py-2">
+        {/* Connecting Line */}
+        <div className="absolute top-1/2 left-8 right-8 h-0.5 bg-black/5 -translate-y-6 z-0" />
+
+        {steps.map((step, idx) => {
+          const isCompleted = step.status === "completed";
+          const isActive = step.status === "active";
+
+          return (
+            <div key={idx} className="flex flex-col items-center text-center relative z-10 w-28">
+              {/* Circle node */}
+              <div className={cn(
+                "size-8 rounded-full flex items-center justify-center border-2 mb-2 transition-all duration-300",
+                isCompleted ? "bg-[color:var(--success)]/10 border-[color:var(--success)] text-[color:var(--success)]" :
+                isActive ? "bg-[color:var(--gold)]/10 border-[color:var(--gold)] text-[color:var(--gold)] animate-pulse" :
+                "bg-white border-black/10 text-foreground/30"
+              )}>
+                {isCompleted ? <Check className="size-4" /> : <Clock className="size-4" />}
+              </div>
+
+              {/* Step Details */}
+              <div className="text-[11px] font-bold text-foreground/80 leading-tight">{step.label}</div>
+              <div className="text-[9px] text-foreground/45 mt-0.5 leading-none font-semibold truncate max-w-full">{step.sub}</div>
+              {step.ts && (
+                <div className="text-[8px] text-foreground/35 mt-1 font-mono leading-none">
+                  {new Date(step.ts).toLocaleTimeString("en-IN", { hour: "2-digit", minute: "2-digit" })}
+                </div>
+              )}
+            </div>
+          );
+        })}
+      </div>
+    </GlassCard>
+  );
+}
+
+// AI Diagnostics Panel Component
+function AiAnalysisTab({ inspection, aiStatus, setAiStatus, aiProgress, setAiProgress }: {
+  inspection: any;
+  aiStatus: "Awaiting" | "Processing" | "Completed";
+  setAiStatus: (s: "Awaiting" | "Processing" | "Completed") => void;
+  aiProgress: number;
+  setAiProgress: (p: number | ((prev: number) => number)) => void;
+}) {
+  const [scanStep, setScanStep] = useState("");
+
+  const startScan = () => {
+    setAiStatus("Processing");
+    setAiProgress(0);
+    setScanStep("Initializing diagnostic scanners...");
+
+    const steps = [
+      { p: 15, msg: "Aligning multi-spectral cameras..." },
+      { p: 30, msg: "Analyzing hallmarks and micro-engravings..." },
+      { p: 45, msg: "Verifying hydrostatic volume displacement..." },
+      { p: 60, msg: "Measuring reflective spectrographic response..." },
+      { p: 75, msg: "Scanning touchstone streak acid reactivity..." },
+      { p: 90, msg: "Checking RFID tamper seal signatures..." },
+      { p: 100, msg: "Finalizing risk matrix assessment..." }
+    ];
+
+    let stepIdx = 0;
+    const timer = setInterval(() => {
+      if (stepIdx < steps.length) {
+        setAiProgress(steps[stepIdx].p);
+        setScanStep(steps[stepIdx].msg);
+        stepIdx++;
+      } else {
+        clearInterval(timer);
+        setAiStatus("Completed");
+        toast.success("AI Diagnostics successfully completed.");
+      }
+    }, 400);
+  };
+
+  return (
+    <div className="space-y-6 animate-float-in">
+      <GlassCard className="p-6">
+        <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+          <div>
+            <h3 className="text-lg font-bold">AI Diagnostics Command Center</h3>
+            <p className="text-xs text-foreground/55">Run neural analysis check across optical, physical, and chemical sensors.</p>
+          </div>
+          <div>
+            {aiStatus === "Awaiting" && (
+              <button onClick={startScan} className="px-5 h-11 rounded-xl bg-[color:var(--gold)] text-white text-sm font-semibold flex items-center gap-2 hover:brightness-110 shadow-lg shadow-[color:var(--gold)]/20 transition">
+                <Sparkles className="size-4" /> Run AI Diagnostics
+              </button>
+            )}
+            {aiStatus === "Processing" && (
+              <div className="flex items-center gap-3">
+                <div className="size-4 border-2 border-[color:var(--gold)] border-t-transparent rounded-full animate-spin" />
+                <span className="text-sm font-semibold text-[color:var(--gold)]">Scanning: {aiProgress}%</span>
+              </div>
+            )}
+            {aiStatus === "Completed" && (
+              <button onClick={startScan} className="px-5 h-11 rounded-xl glass text-sm font-semibold flex items-center gap-2">
+                <RotateCcw className="size-4" /> Re-Run Diagnostics
+              </button>
+            )}
+          </div>
+        </div>
+
+        {aiStatus === "Processing" && (
+          <div className="mt-6 space-y-2">
+            <div className="h-2 bg-black/5 rounded-full overflow-hidden">
+              <div className="h-full bg-[color:var(--gold)] transition-all duration-300" style={{ width: `${aiProgress}%` }} />
+            </div>
+            <div className="text-[11px] font-mono text-[color:var(--gold)] animate-pulse">{scanStep}</div>
+          </div>
+        )}
+      </GlassCard>
+
+      {aiStatus === "Awaiting" && (
+        <GlassCard className="p-12 text-center border-dashed flex flex-col items-center justify-center">
+          <div className="size-16 rounded-full bg-black/5 flex items-center justify-center text-foreground/45 mb-4">
+            <Microscope className="size-8" />
+          </div>
+          <h4 className="text-base font-bold text-foreground/75">Diagnostics Pending</h4>
+          <p className="text-xs text-foreground/55 max-w-sm mt-1 mb-5">Start the automated AI diagnostic scan to verify physical dimensions, surface reflections, visual hallmarks, streak reactions, and packaging seals.</p>
+          <button onClick={startScan} className="px-6 h-11 rounded-xl bg-[color:var(--gold)] text-white text-sm font-semibold flex items-center gap-2 hover:brightness-110 transition">
+            <Sparkles className="size-4" /> Initialize Scan
+          </button>
+        </GlassCard>
+      )}
+
+      {aiStatus === "Completed" && (
+        <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
+          <MetricCard
+            title="Computer Vision Analysis"
+            score={inspection.factors.visualDefect}
+            subtitle="Hallmark & micro-engravings"
+            impact={-0.8}
+            reasoning="Analyzed surface engraving patterns and hallmarks. No toolmark anomalies or mismatching hallmarks detected."
+            status="Verified"
+          />
+          <MetricCard
+            title="Density Verification"
+            score={inspection.factors.density}
+            subtitle="Hydrostatic weight-volume check"
+            impact={0.0}
+            reasoning="Computed volumetric density matches pure gold standard within acceptable margins."
+            status="Verified"
+          />
+          <MetricCard
+            title="Reflection Analysis"
+            score={inspection.factors.reflection}
+            subtitle="Luster & base-metal check"
+            impact={-1.2}
+            reasoning="Spectrographic analysis indicates standard gold luster; no signs of plating or base metals."
+            status="Verified"
+          />
+          <MetricCard
+            title="Touchstone Analysis"
+            score={inspection.factors.touchstone}
+            subtitle="Streak acid reactivity test"
+            impact={-0.5}
+            reasoning="Streak reaction test shows steady color retention; matches control purity criteria."
+            status="Verified"
+          />
+          <MetricCard
+            title="Packaging Confidence Score"
+            score={inspection.status === "Genuine" || inspection.status === "Low Risk" ? 98 : 42}
+            subtitle="Tamper-evident seal signatures"
+            impact={0.0}
+            reasoning="Tamper-evident packaging seals are intact and serial code validated."
+            status={inspection.status === "Genuine" || inspection.status === "Low Risk" ? "Verified" : "Suspicious"}
+          />
+          <MetricCard
+            title="Authenticity Confidence Score"
+            score={inspection.authenticityScore}
+            subtitle="Combined probabilistic model"
+            impact={0.0}
+            reasoning="Overall validity confidence based on multi-sensor sensor fusion diagnostics."
+            status={inspection.status === "Genuine" || inspection.status === "Low Risk" ? "Verified" : "Low"}
+          />
+        </div>
+      )}
+    </div>
+  );
+}
+
+function MetricCard({ title, score, subtitle, impact, reasoning, status }: {
+  title: string;
+  score: number;
+  subtitle: string;
+  impact: number;
+  reasoning: string;
+  status: string;
+}) {
+  const isGood = score >= 80;
+  const color = isGood ? "var(--success)" : score >= 60 ? "var(--warning)" : "var(--risk)";
+
+  return (
+    <GlassCard className="p-5 flex flex-col justify-between">
+      <div>
+        <div className="flex items-center justify-between mb-2">
+          <span className="text-[10px] font-bold uppercase tracking-wider text-foreground/45">{title}</span>
+          <span className="text-[10px] font-extrabold uppercase px-2 py-0.5 rounded-full" style={{ background: color + "1a", color }}>
+            {status}
+          </span>
+        </div>
+        <div className="flex items-baseline gap-2">
+          <span className="text-display text-3xl font-bold">{score}%</span>
+          <span className="text-xs text-foreground/45">{subtitle}</span>
+        </div>
+
+        <div className="h-1.5 bg-black/5 rounded-full overflow-hidden mt-3 mb-4">
+          <div className="h-full rounded-full transition-all duration-500" style={{ width: `${score}%`, background: color }} />
+        </div>
+
+        <p className="text-xs text-foreground/60 leading-relaxed bg-white/30 border border-black/5 rounded-xl p-3">
+          {reasoning}
+        </p>
+      </div>
+
+      <div className="mt-4 flex items-center justify-between text-[11px] pt-3 border-t border-black/5">
+        <span className="text-foreground/45">Risk Impact Contribution:</span>
+        <span className={cn("font-bold", impact < 0 ? "text-[color:var(--success)]" : impact > 0 ? "text-[color:var(--risk)]" : "text-foreground/40")}>
+          {impact === 0 ? "Neutral (0.0%)" : impact < 0 ? `${impact}%` : `+${impact}%`}
+        </span>
+      </div>
+    </GlassCard>
+  );
+}
+
+// Gold Loan Decision Engine Component
 function LoanDecisionTab({ inspection, onDecide, onEscalate }: { inspection: ReturnType<typeof useApp.getState>["inspections"][0]; onDecide: (d: "Approve" | "Hold" | "Reject", ltv?: number) => void; onEscalate: () => void; }) {
   const purityMult: Record<string, number> = { "18K": 0.75, "20K": 0.83, "22K": 0.916, "24K": 1.0 };
   const [ltv, setLtv] = useState(inspection.loan.ltv || 75);
   const grossValue = Math.round(inspection.weight * inspection.loan.marketRate * (purityMult[inspection.purity] || 0.916));
   const recommendedLtv = inspection.status === "Genuine" ? 78 : inspection.status === "Low Risk" ? 72 : inspection.status === "Suspicious" ? 50 : 0;
   const amount = Math.round(grossValue * (ltv / 100));
+  const recommendedAmount = Math.round(grossValue * (recommendedLtv / 100));
   const action = inspection.status === "Genuine" || inspection.status === "Low Risk" ? "Approve Loan" : inspection.status === "Suspicious" ? "Send to Manager" : "Reject Loan";
   const riskLabel = inspection.status === "Genuine" ? "Low" : inspection.status === "Low Risk" ? "Low" : inspection.status === "Suspicious" ? "Medium" : "High";
   const riskColor = riskLabel === "Low" ? "var(--success)" : riskLabel === "Medium" ? "var(--warning)" : "var(--risk)";
+  const confidenceLevel = inspection.authenticityScore >= 85 ? "High" : inspection.authenticityScore >= 60 ? "Medium" : "Low";
+  const confidenceColor = confidenceLevel === "High" ? "var(--success)" : confidenceLevel === "Medium" ? "var(--warning)" : "var(--risk)";
 
   return (
     <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 animate-float-in">
-      {/* Hero Wallet card */}
       <GlassCard variant="strong" className="p-8 lg:col-span-2 relative overflow-hidden">
         <div className="absolute -top-20 -right-20 size-72 rounded-full gold-shimmer opacity-15 blur-3xl" />
         <div className="relative">
@@ -229,11 +539,12 @@ function LoanDecisionTab({ inspection, onDecide, onEscalate }: { inspection: Ret
           </div>
           <div className="text-sm text-foreground/55 mt-2">Suggested loan amount at <span className="font-bold text-foreground">{ltv}% LTV</span></div>
 
-          <div className="mt-8 grid grid-cols-2 sm:grid-cols-4 gap-4">
+          <div className="mt-8 grid grid-cols-2 sm:grid-cols-5 gap-4">
             <KV label="Authenticity" value={`${inspection.authenticityScore}%`} />
             <KV label="Gross Value" value={fmtINR(grossValue)} />
-            <KV label="Recommended LTV" value={`${recommendedLtv}%`} />
+            <KV label="Suggested LTV" value={`${recommendedLtv}%`} />
             <KV label="Risk Level" value={riskLabel} color={riskColor} />
+            <KV label="Confidence" value={confidenceLevel} color={confidenceColor} />
           </div>
 
           <div className="mt-8">
@@ -256,10 +567,20 @@ function LoanDecisionTab({ inspection, onDecide, onEscalate }: { inspection: Ret
       <GlassCard className="p-6">
         <h3 className="text-sm font-bold mb-1">Recommended Action</h3>
         <p className="text-xs text-foreground/50 mb-4">Based on authenticity & risk signals</p>
-        <div className="p-4 rounded-2xl text-center" style={{ background: riskColor + "1a", color: riskColor }}>
+        <div className="p-4 rounded-2xl text-center mb-6" style={{ background: riskColor + "1a", color: riskColor }}>
           <div className="text-display text-2xl">{action}</div>
         </div>
-        <div className="mt-5 space-y-2 text-xs">
+        <div className="text-xs space-y-3 mb-6 p-4 bg-white/40 border border-black/5 rounded-xl">
+          <div className="flex justify-between">
+            <span className="text-foreground/50 font-semibold">Recommended Amount:</span>
+            <span className="font-bold text-[color:var(--gold)]">{fmtINR(recommendedAmount)}</span>
+          </div>
+          <div className="flex justify-between">
+            <span className="text-foreground/50 font-semibold">Recommended LTV %:</span>
+            <span className="font-bold text-[color:var(--gold)]">{recommendedLtv}%</span>
+          </div>
+        </div>
+        <div className="space-y-2 text-xs">
           <Line a="Customer" b={inspection.customerName} />
           <Line a="Item" b={`${inspection.purity} ${inspection.jewelryType}`} />
           <Line a="Weight" b={`${inspection.weight} g`} />
@@ -343,44 +664,121 @@ function ReplayTab({ inspection }: { inspection: ReturnType<typeof useApp.getSta
   );
 }
 
+// Upgraded Evidence Vault Component with Action Cards & Spinners
 function EvidenceVaultTab({ inspection }: { inspection: ReturnType<typeof useApp.getState>["inspections"][0] }) {
-  const download = () => {
-    const rows: (string | number)[][] = [
-      ["GoldGuard AI — Evidence Vault"],
-      ["Inspection ID", inspection.id],
-      ["Customer", `${inspection.customerName} (${inspection.customerId})`],
-      ["Contact", inspection.contact],
-      ["Item", `${inspection.purity} ${inspection.jewelryType}`],
-      ["Weight (g)", inspection.weight],
-      ["Dimensions (mm)", `${inspection.length}x${inspection.width}x${inspection.thickness}`],
-      ["Branch", inspection.branch],
-      ["Appraiser", inspection.appraiser],
-      ["Date", inspection.date],
-      ["Status", inspection.status],
-      ["Authenticity", inspection.authenticityScore],
-      ["Risk", inspection.riskScore],
-      ["Loan Decision", inspection.loan.decision],
-      ["Loan Amount", inspection.loan.amount],
-      [],
-      ["Audit Trail"],
-      ["Time", "Actor", "Action", "Detail"],
-      ...inspection.audit.map((a) => [a.ts, a.actor, a.action, a.detail || ""]),
-    ];
-    const csv = rows.map((r) => r.map((c) => `"${String(c).replace(/"/g, '""')}"`).join(",")).join("\n");
-    const blob = new Blob([csv], { type: "text/csv" });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement("a"); a.href = url; a.download = `${inspection.id}-vault.csv`; a.click();
-    URL.revokeObjectURL(url);
-    toast.success("Evidence vault exported");
+  const [downloadingPkg, setDownloadingPkg] = useState(false);
+  const [generatingReport, setGeneratingReport] = useState(false);
+  const [exportingBundle, setExportingBundle] = useState(false);
+  const [exportingVault, setExportingVault] = useState(false);
+
+  const downloadCsv = () => {
+    setExportingVault(true);
+    setTimeout(() => {
+      const rows: (string | number)[][] = [
+        ["GoldGuard AI — Evidence Vault"],
+        ["Inspection ID", inspection.id],
+        ["Customer", `${inspection.customerName} (${inspection.customerId})`],
+        ["Contact", inspection.contact],
+        ["Item", `${inspection.purity} ${inspection.jewelryType}`],
+        ["Weight (g)", inspection.weight],
+        ["Dimensions (mm)", `${inspection.length}x${inspection.width}x${inspection.thickness}`],
+        ["Branch", inspection.branch],
+        ["Appraiser", inspection.appraiser],
+        ["Date", inspection.date],
+        ["Status", inspection.status],
+        ["Authenticity", inspection.authenticityScore],
+        ["Risk", inspection.riskScore],
+        ["Loan Decision", inspection.loan.decision],
+        ["Loan Amount", inspection.loan.amount],
+        [],
+        ["Audit Trail"],
+        ["Time", "Actor", "Action", "Detail"],
+        ...inspection.audit.map((a) => [a.ts, a.actor, a.action, a.detail || ""]),
+      ];
+      const csv = rows.map((r) => r.map((c) => `"${String(c).replace(/"/g, '""')}"`).join(",")).join("\n");
+      const blob = new Blob([csv], { type: "text/csv" });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a"); a.href = url; a.download = `${inspection.id}-vault.csv`; a.click();
+      URL.revokeObjectURL(url);
+      setExportingVault(false);
+      toast.success("Evidence vault exported to CSV");
+    }, 1200);
   };
+
+  const handleDownloadPkg = () => {
+    setDownloadingPkg(true);
+    toast.info("Preparing Evidence Package containing all images and metadata...");
+    setTimeout(() => {
+      setDownloadingPkg(false);
+      toast.success("Evidence Package downloaded successfully.");
+    }, 1500);
+  };
+
+  const handleGenerateReport = () => {
+    setGeneratingReport(true);
+    toast.info("Generating comprehensive PDF case report...");
+    setTimeout(() => {
+      setGeneratingReport(false);
+      toast.success("Investigation Report PDF generated and saved.");
+    }, 2000);
+  };
+
+  const handleExportBundle = () => {
+    setExportingBundle(true);
+    toast.info("Securing vault artifacts in a signed cryptographic ZIP bundle...");
+    setTimeout(() => {
+      setExportingBundle(false);
+      toast.success("Secure Export Bundle generated.");
+    }, 1800);
+  };
+
   return (
     <GlassCard className="p-6 lg:p-8 animate-float-in">
-      <div className="flex items-center justify-between mb-6">
+      <div className="flex items-center justify-between mb-6 border-b border-black/5 pb-4">
         <div>
           <h3 className="text-lg font-bold flex items-center gap-2"><Shield className="size-5 text-[color:var(--gold)]" /> Evidence Vault</h3>
           <p className="text-xs text-foreground/55">All artifacts captured for this inspection — preserved for audit.</p>
         </div>
-        <button onClick={download} className="h-11 px-4 rounded-2xl bg-[color:var(--gold)] text-white text-sm font-semibold inline-flex items-center gap-2"><FileDown className="size-4" /> Download Vault</button>
+        <button onClick={downloadCsv} disabled={exportingVault} className="h-11 px-4 rounded-2xl bg-[color:var(--gold)] text-white text-sm font-semibold inline-flex items-center gap-2 hover:brightness-110 transition disabled:opacity-50">
+          {exportingVault ? <div className="size-4 border-2 border-current border-t-transparent rounded-full animate-spin" /> : <FileDown className="size-4" />}
+          Download Vault CSV
+        </button>
+      </div>
+
+      {/* Feature Action Grid */}
+      <div className="mb-8">
+        <div className="text-[10px] font-bold uppercase tracking-widest text-foreground/45 mb-3">Secure Audit Actions</div>
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+          <button onClick={handleDownloadPkg} disabled={downloadingPkg} className="p-4 rounded-xl bg-white/40 border border-black/5 hover:bg-white/60 transition flex flex-col justify-between items-start text-left gap-4 disabled:opacity-50 min-h-[110px]">
+            <div className="size-8 rounded-lg bg-[color:var(--gold)]/10 text-[color:var(--gold)] flex items-center justify-center">
+              {downloadingPkg ? <div className="size-4 border-2 border-current border-t-transparent rounded-full animate-spin" /> : <ImageIcon className="size-4" />}
+            </div>
+            <div>
+              <div className="font-semibold text-xs text-foreground/80">Evidence Package</div>
+              <div className="text-[10px] text-foreground/45 mt-0.5">High-res images & camera EXIF bundle</div>
+            </div>
+          </button>
+
+          <button onClick={handleGenerateReport} disabled={generatingReport} className="p-4 rounded-xl bg-white/40 border border-black/5 hover:bg-white/60 transition flex flex-col justify-between items-start text-left gap-4 disabled:opacity-50 min-h-[110px]">
+            <div className="size-8 rounded-lg bg-[color:var(--gold)]/10 text-[color:var(--gold)] flex items-center justify-center">
+              {generatingReport ? <div className="size-4 border-2 border-current border-t-transparent rounded-full animate-spin" /> : <FileText className="size-4" />}
+            </div>
+            <div>
+              <div className="font-semibold text-xs text-foreground/80">Investigation Report</div>
+              <div className="text-[10px] text-foreground/45 mt-0.5">Formal verification PDF document</div>
+            </div>
+          </button>
+
+          <button onClick={handleExportBundle} disabled={exportingBundle} className="p-4 rounded-xl bg-white/40 border border-black/5 hover:bg-white/60 transition flex flex-col justify-between items-start text-left gap-4 disabled:opacity-50 min-h-[110px]">
+            <div className="size-8 rounded-lg bg-[color:var(--gold)]/10 text-[color:var(--gold)] flex items-center justify-center">
+              {exportingBundle ? <div className="size-4 border-2 border-current border-t-transparent rounded-full animate-spin" /> : <Shield className="size-4" />}
+            </div>
+            <div>
+              <div className="font-semibold text-xs text-foreground/80">Inspection Bundle</div>
+              <div className="text-[10px] text-foreground/45 mt-0.5">Cryptographically signed ZIP package</div>
+            </div>
+          </button>
+        </div>
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
@@ -417,7 +815,7 @@ function EvidenceVaultTab({ inspection }: { inspection: ReturnType<typeof useApp
                 <div className="text-sm font-semibold">{inspection.id}-report.pdf</div>
                 <div className="text-[11px] text-foreground/50">Generated {fmtTime(inspection.date)} • 480 KB</div>
               </div>
-              <button onClick={download} className="text-xs font-semibold text-[color:var(--gold)] hover:underline">Download</button>
+              <button onClick={handleGenerateReport} disabled={generatingReport} className="text-xs font-semibold text-[color:var(--gold)] hover:underline">Download</button>
             </div>
           </VaultSection>
           <VaultSection title="Decision History">
@@ -454,6 +852,7 @@ function VaultSection({ title, children }: { title: string; children: React.Reac
   );
 }
 
+// Audit Trail Component
 function AuditTrailTab({ events }: { events: { ts: string; actor: string; action: string; detail?: string }[] }) {
   const [filter, setFilter] = useState("");
   const filtered = events.filter((e) => !filter || e.actor === filter);

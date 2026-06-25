@@ -1,5 +1,5 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
-import { useMemo, useState } from "react";
+import { useMemo, useState, useEffect } from "react";
 import { AppHeader } from "@/components/app-header";
 import { GlassCard, KpiTile, StatusChip } from "@/components/glass";
 import { useApp } from "@/stores/app-store";
@@ -30,7 +30,82 @@ function downloadCsv(name: string, rows: (string | number)[][]) {
   URL.revokeObjectURL(url);
 }
 
+function DashboardSkeleton() {
+  return (
+    <div className="animate-pulse space-y-6">
+      {/* Header Skeleton */}
+      <div className="flex justify-between items-center mb-8">
+        <div className="space-y-2">
+          <div className="h-4 w-32 bg-black/5 rounded-md shimmer" />
+          <div className="h-8 w-60 bg-black/5 rounded-lg shimmer" />
+        </div>
+        <div className="flex gap-2">
+          <div className="h-11 w-28 bg-black/5 rounded-2xl shimmer" />
+          <div className="h-11 w-24 bg-black/5 rounded-2xl shimmer" />
+        </div>
+      </div>
+
+      {/* KPI Tiles Skeleton */}
+      <div className="grid grid-cols-2 lg:grid-cols-4 xl:grid-cols-7 gap-4 mb-6">
+        {Array.from({ length: 7 }).map((_, idx) => (
+          <div key={idx} className="h-24 bg-black/5 rounded-2xl shimmer p-4 space-y-3">
+            <div className="h-3 w-16 bg-black/5 rounded-md" />
+            <div className="h-6 w-20 bg-black/5 rounded-md" />
+            <div className="h-3 w-12 bg-black/5 rounded-md" />
+          </div>
+        ))}
+      </div>
+
+      {/* Charts Skeleton */}
+      <div className="grid grid-cols-1 xl:grid-cols-3 gap-6 mb-6">
+        <div className="h-[340px] xl:col-span-2 bg-black/5 rounded-3xl shimmer p-6 space-y-4">
+          <div className="h-4 w-40 bg-black/5 rounded-md" />
+          <div className="h-3 w-60 bg-black/5 rounded-md" />
+          <div className="h-48 w-full bg-black/5 rounded-2xl" />
+        </div>
+        <div className="h-[340px] bg-black/5 rounded-3xl shimmer p-6 space-y-4">
+          <div className="h-4 w-36 bg-black/5 rounded-md" />
+          <div className="h-3 w-44 bg-black/5 rounded-md" />
+          <div className="h-40 w-40 mx-auto rounded-full bg-black/5" />
+        </div>
+      </div>
+
+      {/* Bottom Grid Skeleton */}
+      <div className="grid grid-cols-1 xl:grid-cols-3 gap-6 mb-6">
+        <div className="h-[380px] xl:col-span-2 bg-black/5 rounded-3xl shimmer p-6 space-y-4">
+          <div className="flex justify-between">
+            <div className="h-4 w-40 bg-black/5 rounded-md" />
+            <div className="h-4 w-16 bg-black/5 rounded-md" />
+          </div>
+          <div className="space-y-4 mt-6">
+            {Array.from({ length: 5 }).map((_, idx) => (
+              <div key={idx} className="flex justify-between items-center border-t border-black/5 pt-4">
+                <div className="space-y-2">
+                  <div className="h-4 w-32 bg-black/5 rounded-md" />
+                  <div className="h-3 w-24 bg-black/5 rounded-md" />
+                </div>
+                <div className="h-4 w-12 bg-black/5 rounded-md" />
+              </div>
+            ))}
+          </div>
+        </div>
+        <div className="h-[380px] bg-black/5 rounded-3xl shimmer p-6 space-y-4">
+          <div className="h-4 w-36 bg-black/5 rounded-md" />
+          <div className="h-3 w-48 bg-black/5 rounded-md" />
+          <div className="h-48 w-full bg-black/5 rounded-2xl" />
+        </div>
+      </div>
+    </div>
+  );
+}
+
 function Dashboard() {
+  const [isLoading, setIsLoading] = useState(true);
+  useEffect(() => {
+    const t = setTimeout(() => setIsLoading(false), 500);
+    return () => clearTimeout(t);
+  }, []);
+
   const inspections = useApp((s) => s.inspections);
   const branches = useApp((s) => s.branches);
   const [search, setSearch] = useState("");
@@ -80,6 +155,10 @@ function Dashboard() {
     downloadCsv("goldguard-dashboard.csv", rows);
     toast.success("Report exported", { description: `${rows.length - 1} inspections exported as CSV.` });
   };
+
+  if (isLoading) {
+    return <DashboardSkeleton />;
+  }
 
   return (
     <>
