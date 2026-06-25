@@ -9,7 +9,11 @@
 // Additionally, you should also exclude this file from your linter and/or formatter to prevent it from being checked or modified.
 
 import { Route as rootRouteImport } from './routes/__root'
+import { Route as SettingsRouteImport } from './routes/settings'
+import { Route as ReportsRouteImport } from './routes/reports'
+import { Route as ProfileRouteImport } from './routes/profile'
 import { Route as PortfolioRouteImport } from './routes/portfolio'
+import { Route as NotificationsRouteImport } from './routes/notifications'
 import { Route as ManagerRouteImport } from './routes/manager'
 import { Route as HistoryRouteImport } from './routes/history'
 import { Route as EscalationsRouteImport } from './routes/escalations'
@@ -20,9 +24,29 @@ import { Route as IndexRouteImport } from './routes/index'
 import { Route as InspectionNewRouteImport } from './routes/inspection.new'
 import { Route as InspectionIdRouteImport } from './routes/inspection.$id'
 
+const SettingsRoute = SettingsRouteImport.update({
+  id: '/settings',
+  path: '/settings',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ReportsRoute = ReportsRouteImport.update({
+  id: '/reports',
+  path: '/reports',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ProfileRoute = ProfileRouteImport.update({
+  id: '/profile',
+  path: '/profile',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const PortfolioRoute = PortfolioRouteImport.update({
   id: '/portfolio',
   path: '/portfolio',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const NotificationsRoute = NotificationsRouteImport.update({
+  id: '/notifications',
+  path: '/notifications',
   getParentRoute: () => rootRouteImport,
 } as any)
 const ManagerRoute = ManagerRouteImport.update({
@@ -79,7 +103,11 @@ export interface FileRoutesByFullPath {
   '/escalations': typeof EscalationsRoute
   '/history': typeof HistoryRoute
   '/manager': typeof ManagerRoute
+  '/notifications': typeof NotificationsRoute
   '/portfolio': typeof PortfolioRoute
+  '/profile': typeof ProfileRoute
+  '/reports': typeof ReportsRoute
+  '/settings': typeof SettingsRoute
   '/inspection/$id': typeof InspectionIdRoute
   '/inspection/new': typeof InspectionNewRoute
 }
@@ -91,7 +119,11 @@ export interface FileRoutesByTo {
   '/escalations': typeof EscalationsRoute
   '/history': typeof HistoryRoute
   '/manager': typeof ManagerRoute
+  '/notifications': typeof NotificationsRoute
   '/portfolio': typeof PortfolioRoute
+  '/profile': typeof ProfileRoute
+  '/reports': typeof ReportsRoute
+  '/settings': typeof SettingsRoute
   '/inspection/$id': typeof InspectionIdRoute
   '/inspection/new': typeof InspectionNewRoute
 }
@@ -104,7 +136,11 @@ export interface FileRoutesById {
   '/escalations': typeof EscalationsRoute
   '/history': typeof HistoryRoute
   '/manager': typeof ManagerRoute
+  '/notifications': typeof NotificationsRoute
   '/portfolio': typeof PortfolioRoute
+  '/profile': typeof ProfileRoute
+  '/reports': typeof ReportsRoute
+  '/settings': typeof SettingsRoute
   '/inspection/$id': typeof InspectionIdRoute
   '/inspection/new': typeof InspectionNewRoute
 }
@@ -118,7 +154,11 @@ export interface FileRouteTypes {
     | '/escalations'
     | '/history'
     | '/manager'
+    | '/notifications'
     | '/portfolio'
+    | '/profile'
+    | '/reports'
+    | '/settings'
     | '/inspection/$id'
     | '/inspection/new'
   fileRoutesByTo: FileRoutesByTo
@@ -130,7 +170,11 @@ export interface FileRouteTypes {
     | '/escalations'
     | '/history'
     | '/manager'
+    | '/notifications'
     | '/portfolio'
+    | '/profile'
+    | '/reports'
+    | '/settings'
     | '/inspection/$id'
     | '/inspection/new'
   id:
@@ -142,7 +186,11 @@ export interface FileRouteTypes {
     | '/escalations'
     | '/history'
     | '/manager'
+    | '/notifications'
     | '/portfolio'
+    | '/profile'
+    | '/reports'
+    | '/settings'
     | '/inspection/$id'
     | '/inspection/new'
   fileRoutesById: FileRoutesById
@@ -155,18 +203,50 @@ export interface RootRouteChildren {
   EscalationsRoute: typeof EscalationsRoute
   HistoryRoute: typeof HistoryRoute
   ManagerRoute: typeof ManagerRoute
+  NotificationsRoute: typeof NotificationsRoute
   PortfolioRoute: typeof PortfolioRoute
+  ProfileRoute: typeof ProfileRoute
+  ReportsRoute: typeof ReportsRoute
+  SettingsRoute: typeof SettingsRoute
   InspectionIdRoute: typeof InspectionIdRoute
   InspectionNewRoute: typeof InspectionNewRoute
 }
 
 declare module '@tanstack/react-router' {
   interface FileRoutesByPath {
+    '/settings': {
+      id: '/settings'
+      path: '/settings'
+      fullPath: '/settings'
+      preLoaderRoute: typeof SettingsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/reports': {
+      id: '/reports'
+      path: '/reports'
+      fullPath: '/reports'
+      preLoaderRoute: typeof ReportsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/profile': {
+      id: '/profile'
+      path: '/profile'
+      fullPath: '/profile'
+      preLoaderRoute: typeof ProfileRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/portfolio': {
       id: '/portfolio'
       path: '/portfolio'
       fullPath: '/portfolio'
       preLoaderRoute: typeof PortfolioRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/notifications': {
+      id: '/notifications'
+      path: '/notifications'
+      fullPath: '/notifications'
+      preLoaderRoute: typeof NotificationsRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/manager': {
@@ -243,7 +323,11 @@ const rootRouteChildren: RootRouteChildren = {
   EscalationsRoute: EscalationsRoute,
   HistoryRoute: HistoryRoute,
   ManagerRoute: ManagerRoute,
+  NotificationsRoute: NotificationsRoute,
   PortfolioRoute: PortfolioRoute,
+  ProfileRoute: ProfileRoute,
+  ReportsRoute: ReportsRoute,
+  SettingsRoute: SettingsRoute,
   InspectionIdRoute: InspectionIdRoute,
   InspectionNewRoute: InspectionNewRoute,
 }
