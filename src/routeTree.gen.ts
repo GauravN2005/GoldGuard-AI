@@ -9,38 +9,65 @@
 // Additionally, you should also exclude this file from your linter and/or formatter to prevent it from being checked or modified.
 
 import { Route as rootRouteImport } from './routes/__root'
+import { Route as ManagerRouteImport } from './routes/manager'
 import { Route as IndexRouteImport } from './routes/index'
+import { Route as InspectionNewRouteImport } from './routes/inspection.new'
 
+const ManagerRoute = ManagerRouteImport.update({
+  id: '/manager',
+  path: '/manager',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const IndexRoute = IndexRouteImport.update({
   id: '/',
   path: '/',
   getParentRoute: () => rootRouteImport,
 } as any)
+const InspectionNewRoute = InspectionNewRouteImport.update({
+  id: '/inspection/new',
+  path: '/inspection/new',
+  getParentRoute: () => rootRouteImport,
+} as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
+  '/manager': typeof ManagerRoute
+  '/inspection/new': typeof InspectionNewRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
+  '/manager': typeof ManagerRoute
+  '/inspection/new': typeof InspectionNewRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
+  '/manager': typeof ManagerRoute
+  '/inspection/new': typeof InspectionNewRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
-  fullPaths: '/'
+  fullPaths: '/' | '/manager' | '/inspection/new'
   fileRoutesByTo: FileRoutesByTo
-  to: '/'
-  id: '__root__' | '/'
+  to: '/' | '/manager' | '/inspection/new'
+  id: '__root__' | '/' | '/manager' | '/inspection/new'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
+  ManagerRoute: typeof ManagerRoute
+  InspectionNewRoute: typeof InspectionNewRoute
 }
 
 declare module '@tanstack/react-router' {
   interface FileRoutesByPath {
+    '/manager': {
+      id: '/manager'
+      path: '/manager'
+      fullPath: '/manager'
+      preLoaderRoute: typeof ManagerRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/': {
       id: '/'
       path: '/'
@@ -48,11 +75,20 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof IndexRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/inspection/new': {
+      id: '/inspection/new'
+      path: '/inspection/new'
+      fullPath: '/inspection/new'
+      preLoaderRoute: typeof InspectionNewRouteImport
+      parentRoute: typeof rootRouteImport
+    }
   }
 }
 
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
+  ManagerRoute: ManagerRoute,
+  InspectionNewRoute: InspectionNewRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
