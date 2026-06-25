@@ -9,14 +9,50 @@
 // Additionally, you should also exclude this file from your linter and/or formatter to prevent it from being checked or modified.
 
 import { Route as rootRouteImport } from './routes/__root'
+import { Route as PortfolioRouteImport } from './routes/portfolio'
 import { Route as ManagerRouteImport } from './routes/manager'
+import { Route as HistoryRouteImport } from './routes/history'
+import { Route as EscalationsRouteImport } from './routes/escalations'
+import { Route as EmployeesRouteImport } from './routes/employees'
+import { Route as BranchesRouteImport } from './routes/branches'
+import { Route as AnalyticsRouteImport } from './routes/analytics'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as InspectionNewRouteImport } from './routes/inspection.new'
 import { Route as InspectionIdRouteImport } from './routes/inspection.$id'
 
+const PortfolioRoute = PortfolioRouteImport.update({
+  id: '/portfolio',
+  path: '/portfolio',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const ManagerRoute = ManagerRouteImport.update({
   id: '/manager',
   path: '/manager',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const HistoryRoute = HistoryRouteImport.update({
+  id: '/history',
+  path: '/history',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const EscalationsRoute = EscalationsRouteImport.update({
+  id: '/escalations',
+  path: '/escalations',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const EmployeesRoute = EmployeesRouteImport.update({
+  id: '/employees',
+  path: '/employees',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const BranchesRoute = BranchesRouteImport.update({
+  id: '/branches',
+  path: '/branches',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const AnalyticsRoute = AnalyticsRouteImport.update({
+  id: '/analytics',
+  path: '/analytics',
   getParentRoute: () => rootRouteImport,
 } as any)
 const IndexRoute = IndexRouteImport.update({
@@ -37,45 +73,142 @@ const InspectionIdRoute = InspectionIdRouteImport.update({
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
+  '/analytics': typeof AnalyticsRoute
+  '/branches': typeof BranchesRoute
+  '/employees': typeof EmployeesRoute
+  '/escalations': typeof EscalationsRoute
+  '/history': typeof HistoryRoute
   '/manager': typeof ManagerRoute
+  '/portfolio': typeof PortfolioRoute
   '/inspection/$id': typeof InspectionIdRoute
   '/inspection/new': typeof InspectionNewRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
+  '/analytics': typeof AnalyticsRoute
+  '/branches': typeof BranchesRoute
+  '/employees': typeof EmployeesRoute
+  '/escalations': typeof EscalationsRoute
+  '/history': typeof HistoryRoute
   '/manager': typeof ManagerRoute
+  '/portfolio': typeof PortfolioRoute
   '/inspection/$id': typeof InspectionIdRoute
   '/inspection/new': typeof InspectionNewRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
+  '/analytics': typeof AnalyticsRoute
+  '/branches': typeof BranchesRoute
+  '/employees': typeof EmployeesRoute
+  '/escalations': typeof EscalationsRoute
+  '/history': typeof HistoryRoute
   '/manager': typeof ManagerRoute
+  '/portfolio': typeof PortfolioRoute
   '/inspection/$id': typeof InspectionIdRoute
   '/inspection/new': typeof InspectionNewRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
-  fullPaths: '/' | '/manager' | '/inspection/$id' | '/inspection/new'
+  fullPaths:
+    | '/'
+    | '/analytics'
+    | '/branches'
+    | '/employees'
+    | '/escalations'
+    | '/history'
+    | '/manager'
+    | '/portfolio'
+    | '/inspection/$id'
+    | '/inspection/new'
   fileRoutesByTo: FileRoutesByTo
-  to: '/' | '/manager' | '/inspection/$id' | '/inspection/new'
-  id: '__root__' | '/' | '/manager' | '/inspection/$id' | '/inspection/new'
+  to:
+    | '/'
+    | '/analytics'
+    | '/branches'
+    | '/employees'
+    | '/escalations'
+    | '/history'
+    | '/manager'
+    | '/portfolio'
+    | '/inspection/$id'
+    | '/inspection/new'
+  id:
+    | '__root__'
+    | '/'
+    | '/analytics'
+    | '/branches'
+    | '/employees'
+    | '/escalations'
+    | '/history'
+    | '/manager'
+    | '/portfolio'
+    | '/inspection/$id'
+    | '/inspection/new'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
+  AnalyticsRoute: typeof AnalyticsRoute
+  BranchesRoute: typeof BranchesRoute
+  EmployeesRoute: typeof EmployeesRoute
+  EscalationsRoute: typeof EscalationsRoute
+  HistoryRoute: typeof HistoryRoute
   ManagerRoute: typeof ManagerRoute
+  PortfolioRoute: typeof PortfolioRoute
   InspectionIdRoute: typeof InspectionIdRoute
   InspectionNewRoute: typeof InspectionNewRoute
 }
 
 declare module '@tanstack/react-router' {
   interface FileRoutesByPath {
+    '/portfolio': {
+      id: '/portfolio'
+      path: '/portfolio'
+      fullPath: '/portfolio'
+      preLoaderRoute: typeof PortfolioRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/manager': {
       id: '/manager'
       path: '/manager'
       fullPath: '/manager'
       preLoaderRoute: typeof ManagerRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/history': {
+      id: '/history'
+      path: '/history'
+      fullPath: '/history'
+      preLoaderRoute: typeof HistoryRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/escalations': {
+      id: '/escalations'
+      path: '/escalations'
+      fullPath: '/escalations'
+      preLoaderRoute: typeof EscalationsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/employees': {
+      id: '/employees'
+      path: '/employees'
+      fullPath: '/employees'
+      preLoaderRoute: typeof EmployeesRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/branches': {
+      id: '/branches'
+      path: '/branches'
+      fullPath: '/branches'
+      preLoaderRoute: typeof BranchesRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/analytics': {
+      id: '/analytics'
+      path: '/analytics'
+      fullPath: '/analytics'
+      preLoaderRoute: typeof AnalyticsRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/': {
@@ -104,7 +237,13 @@ declare module '@tanstack/react-router' {
 
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
+  AnalyticsRoute: AnalyticsRoute,
+  BranchesRoute: BranchesRoute,
+  EmployeesRoute: EmployeesRoute,
+  EscalationsRoute: EscalationsRoute,
+  HistoryRoute: HistoryRoute,
   ManagerRoute: ManagerRoute,
+  PortfolioRoute: PortfolioRoute,
   InspectionIdRoute: InspectionIdRoute,
   InspectionNewRoute: InspectionNewRoute,
 }
