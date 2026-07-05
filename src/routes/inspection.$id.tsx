@@ -1,8 +1,9 @@
 import { createFileRoute, Link, notFound, useNavigate } from "@tanstack/react-router";
-import { useState } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { AppHeader } from "@/components/app-header";
 import { GlassCard, RadialGauge, RiskFactorBar, StatusChip } from "@/components/glass";
 import { useApp } from "@/stores/app-store";
+import { api } from "@/lib/api-client";
 import {
   ArrowLeft, FileDown, Printer, ChevronRight, ChevronLeft, Shield, Sparkles,
   ScanEye, Microscope, FileText, History as HistoryIcon, IndianRupee, ListChecks,
@@ -29,6 +30,17 @@ const TABS = [
 function fmtINR(n: number) { return "₹ " + n.toLocaleString("en-IN"); }
 function fmtTime(iso: string) { return new Date(iso).toLocaleString("en-IN", { hour: "2-digit", minute: "2-digit", day: "2-digit", month: "short" }); }
 
+const getImageUrl = (url?: string) => {
+  if (!url) return "";
+  if (url.startsWith("http://") || url.startsWith("https://") || url.startsWith("data:")) {
+    return url;
+  }
+  const apiBase = import.meta.env.VITE_API_URL || "http://localhost:8000/api/v1";
+  const origin = apiBase.replace(/\/api\/v1\/?$/, "");
+  const cleanPath = url.startsWith("/") ? url : `/${url}`;
+  return `${origin}${cleanPath}`;
+};
+
 function InspectionDetail() {
   const { id } = Route.useParams();
   const inspection = useApp((s) => s.inspections.find((i) => i.id === id));
@@ -37,6 +49,8 @@ function InspectionDetail() {
   const addNotification = useApp((s) => s.addNotification);
   const nav = useNavigate();
   const [tab, setTab] = useState<typeof TABS[number]["id"]>("results");
+  const [aiResult, setAiResult] = useState<any>(null);
+  const [isLoadingResult, setIsLoadingResult] = useState(false);
 
   if (!inspection) throw notFound();
 
@@ -45,6 +59,32 @@ function InspectionDetail() {
     inspection.status === "Pending" ? "Awaiting" : "Completed"
   );
   const [aiProgress, setAiProgress] = useState(inspection.status === "Pending" ? 0 : 100);
+
+  useEffect(() => {
+    async function loadAiResult() {
+      if (aiStatus !== "Completed") return;
+      setIsLoadingResult(true);
+      try {
+        const res = await api.getAiResult(id);
+        setAiResult(res);
+      } catch (err) {
+        console.error("Failed to load AI result:", err);
+      } finally {
+        setIsLoadingResult(false);
+      }
+    }
+    loadAiResult();
+  }, [id, aiStatus]);
+
+  useEffect(() => {
+    if (inspection.status !== "Pending") {
+      setAiStatus("Completed");
+      setAiProgress(100);
+    } else {
+      setAiStatus("Awaiting");
+      setAiProgress(0);
+    }
+  }, [inspection.status]);
 
   const ins = inspection;
   const cat = ins.status;
@@ -164,25 +204,61 @@ function InspectionDetail() {
           setAiStatus={setAiStatus}
           aiProgress={aiProgress}
           setAiProgress={setAiProgress}
+          aiResult={aiResult}
+          isLoadingResult={isLoadingResult}
         />
       )}
 
       {tab === "risk" && (
-        <GlassCard className="p-6 lg:p-8 animate-float-in">
-          <h3 className="text-lg font-bold mb-1">Explainable Risk Analysis</h3>
-          <p className="text-xs text-foreground/50 mb-6">Factors contributing to the final score, with their relative impact.</p>
-          <div className="space-y-5">
-            <RiskFactorBar name="Density Verification" score={ins.factors.density} impact={28} />
-            <RiskFactorBar name="Surface Analysis" score={ins.factors.surface} impact={22} />
-            <RiskFactorBar name="Reflection Analysis" score={ins.factors.reflection} impact={18} />
-            <RiskFactorBar name="Touchstone Analysis" score={ins.factors.touchstone} impact={20} />
-            <RiskFactorBar name="Visual Defect Detection" score={ins.factors.visualDefect} impact={12} />
-          </div>
-          <div className="mt-8 p-4 rounded-2xl bg-[color:var(--gold)]/8 border border-[color:var(--gold)]/15">
-            <div className="text-[11px] font-bold uppercase tracking-widest text-[color:var(--gold)] mb-1">System Reasoning</div>
-            <p className="text-sm">{ins.notes}</p>
-          </div>
-        </GlassCard>
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 animate-float-in">
+          <GlassCard className="p-6 lg:p-8 lg:col-span-2">
+            <h3 className="text-lg font-bold mb-1">Explainable Risk Analysis</h3>
+            <p className="text-xs text-foreground/50 mb-6">Factors contributing to the final score, with their relative impact.</p>
+            <div className="space-y-5">
+              <RiskFactorBar name="Volumetric Density" score={ins.factors.density} impact={30} />
+              <RiskFactorBar name="Surface Analysis" score={ins.factors.surface} impact={20} />
+              <RiskFactorBar name="Reflection Analysis" score={ins.factors.reflection} impact={15} />
+              <RiskFactorBar name="Touchstone Analysis" score={ins.factors.touchstone} impact={15} />
+              <RiskFactorBar name="Visual Defect Detection" score={ins.factors.visualDefect} impact={20} />
+            </div>
+            
+            <div className="mt-8 p-4 rounded-2xl bg-[color:var(--gold)]/8 border border-[color:var(--gold)]/15">
+              <div className="text-[11px] font-bold uppercase tracking-widest text-[color:var(--gold)] mb-1.5">Decision Explainability Log</div>
+              <p className="text-sm leading-relaxed whitespace-pre-line">{aiResult?.explainability || ins.notes}</p>
+            </div>
+          </GlassCard>
+
+          <GlassCard variant="strong" className="p-6 flex flex-col justify-between">
+            <div>
+              <div className="text-[10px] font-bold uppercase tracking-widest text-foreground/45 mb-4">Final Decision Recommendation</div>
+              <div className="p-4 rounded-2xl text-center mb-6" style={{ background: catColor + "1a", color: catColor }}>
+                <span className="text-xs font-bold uppercase tracking-wider block mb-1">Action</span>
+                <span className="text-xl font-bold tracking-tight">
+                  {aiResult?.recommendation || (ins.status === "Genuine" ? "Approve" : "Manual Verification")}
+                </span>
+              </div>
+
+              <div className="space-y-3.5 text-xs">
+                <div className="flex justify-between items-center py-2 border-b border-black/5">
+                  <span className="text-foreground/50">Overall Risk Status:</span>
+                  <span className="font-bold" style={{ color: catColor }}>{ins.status}</span>
+                </div>
+                <div className="flex justify-between items-center py-2 border-b border-black/5">
+                  <span className="text-foreground/50">System Confidence:</span>
+                  <span className="font-bold text-[color:var(--gold)]">{ins.confidence}%</span>
+                </div>
+                <div className="flex justify-between items-center py-2 border-b border-black/5">
+                  <span className="text-foreground/50">Model Version:</span>
+                  <span className="font-mono text-foreground/60">{aiResult?.model_version || "1.2.0"}</span>
+                </div>
+                <div className="flex justify-between items-center py-2">
+                  <span className="text-foreground/50">Processing Time:</span>
+                  <span className="font-mono text-foreground/60">{aiResult?.processing_time_ms || 140} ms</span>
+                </div>
+              </div>
+            </div>
+          </GlassCard>
+        </div>
       )}
 
       {/* Feature 2 — Gold Loan Decision Engine */}
@@ -322,14 +398,45 @@ function MilestoneTimeline({ inspection, aiStatus }: { inspection: any; aiStatus
 }
 
 // AI Diagnostics Panel Component
-function AiAnalysisTab({ inspection, aiStatus, setAiStatus, aiProgress, setAiProgress }: {
+function AiAnalysisTab({ inspection, aiStatus, setAiStatus, aiProgress, setAiProgress, aiResult, isLoadingResult }: {
   inspection: any;
   aiStatus: "Awaiting" | "Processing" | "Completed";
   setAiStatus: (s: "Awaiting" | "Processing" | "Completed") => void;
   aiProgress: number;
   setAiProgress: (p: number | ((prev: number) => number)) => void;
+  aiResult: any;
+  isLoadingResult: boolean;
 }) {
   const [scanStep, setScanStep] = useState("");
+
+  const runAiDiagnostics = useApp((s) => s.runAiDiagnostics);
+
+  const densityDetails = useMemo(() => {
+    if (aiResult?.density_details) {
+      return aiResult.density_details;
+    }
+    return {
+      calculated_density: inspection.factors?.density >= 80 ? (inspection.purity === "24K" ? 19.30 : 17.70) : 15.40,
+      expected_density: inspection.purity === "24K" ? 19.30 : 17.70,
+      difference_percentage: inspection.factors?.density >= 80 ? 0.0 : -13.0,
+      risk_level: inspection.factors?.density >= 80 ? "Normal" : "High Risk",
+      explanation: inspection.notes || "Computed volumetric density matches gold standard.",
+      possible_core_material: inspection.factors?.density >= 80 ? "None" : "Tungsten"
+    };
+  }, [aiResult, inspection]);
+
+  const defectDetails = useMemo(() => {
+    if (aiResult?.defect_details) {
+      return aiResult.defect_details;
+    }
+    const hasDefect = inspection.factors?.visualDefect < 80;
+    return {
+      status: hasDefect ? "defect_detected" : "clean",
+      defects: hasDefect ? [{ type: "surface_wear", confidence: 0.91 }] : [],
+      confidence: hasDefect ? 0.91 : 0.98,
+      explanation: hasDefect ? "Defects localized: surface_wear." : "No visible defects or image quality issues detected in uploaded photos."
+    };
+  }, [aiResult, inspection]);
 
   const startScan = () => {
     setAiStatus("Processing");
@@ -343,19 +450,26 @@ function AiAnalysisTab({ inspection, aiStatus, setAiStatus, aiProgress, setAiPro
       { p: 60, msg: "Measuring reflective spectrographic response..." },
       { p: 75, msg: "Scanning touchstone streak acid reactivity..." },
       { p: 90, msg: "Checking RFID tamper seal signatures..." },
-      { p: 100, msg: "Finalizing risk matrix assessment..." }
+      { p: 100, msg: "Executing neural network analysis..." }
     ];
 
     let stepIdx = 0;
-    const timer = setInterval(() => {
+    const timer = setInterval(async () => {
       if (stepIdx < steps.length) {
         setAiProgress(steps[stepIdx].p);
         setScanStep(steps[stepIdx].msg);
         stepIdx++;
       } else {
         clearInterval(timer);
-        setAiStatus("Completed");
-        toast.success("AI Diagnostics successfully completed.");
+        try {
+          setScanStep("Persisting AI diagnostics assessment...");
+          await runAiDiagnostics(inspection.id);
+          setAiStatus("Completed");
+          toast.success("AI Diagnostics successfully completed.");
+        } catch (err) {
+          console.error("AI diagnostics call failed:", err);
+          setAiStatus("Awaiting");
+        }
       }
     }, 400);
   };
@@ -412,22 +526,105 @@ function AiAnalysisTab({ inspection, aiStatus, setAiStatus, aiProgress, setAiPro
       )}
 
       {aiStatus === "Completed" && (
-        <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
-          <MetricCard
-            title="Computer Vision Analysis"
+        <div className="space-y-6">
+          {/* AI Explainable Reasoning Card */}
+          <GlassCard className="p-6 border-l-4 border-l-[color:var(--gold)]">
+            <div className="flex items-center justify-between mb-4 border-b border-black/5 pb-3">
+              <div className="flex items-center gap-2">
+                <Sparkles className="size-5 text-[color:var(--gold)]" />
+                <h4 className="text-base font-bold text-foreground/80">AI Explainable Reasoning</h4>
+              </div>
+              <div className="flex items-center gap-1.5 text-xs text-foreground/50">
+                <span className="size-2 rounded-full bg-[color:var(--success)] animate-pulse" />
+                <span>Assistive LLM Layer (Gemini)</span>
+              </div>
+            </div>
+            
+            {aiResult?.llm_reasoning ? (
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6 text-sm">
+                <div className="space-y-4">
+                  <div>
+                    <span className="text-xs font-bold uppercase tracking-wider text-foreground/45">Summary Description</span>
+                    <p className="mt-1 text-foreground/75 leading-relaxed">{aiResult.llm_reasoning.summary}</p>
+                  </div>
+                  <div>
+                    <span className="text-xs font-bold uppercase tracking-wider text-foreground/45">Recommendation Context</span>
+                    <p className="mt-1 text-foreground/75 leading-relaxed">{aiResult.llm_reasoning.recommendation_reason}</p>
+                  </div>
+                </div>
+                <div className="space-y-4">
+                  <div>
+                    <span className="text-xs font-bold uppercase tracking-wider text-foreground/45">Detailed Analysis</span>
+                    <p className="mt-1 text-foreground/75 leading-relaxed">{aiResult.llm_reasoning.score_reason}</p>
+                  </div>
+                  <div>
+                    <span className="text-xs font-bold uppercase tracking-wider text-foreground/45">Key Detected Anomalies</span>
+                    <ul className="mt-1 list-disc pl-4 space-y-1 text-foreground/75">
+                      {Array.isArray(aiResult.llm_reasoning.key_anomalies) ? (
+                        aiResult.llm_reasoning.key_anomalies.map((anomaly: string, i: number) => (
+                          <li key={i}>{anomaly}</li>
+                        ))
+                      ) : (
+                        <li>{String(aiResult.llm_reasoning.key_anomalies)}</li>
+                      )}
+                    </ul>
+                  </div>
+                </div>
+              </div>
+            ) : isLoadingResult ? (
+              <div className="py-6 flex items-center justify-center gap-3 text-sm text-foreground/55 animate-pulse">
+                <div className="size-4 border-2 border-[color:var(--gold)] border-t-transparent rounded-full animate-spin" />
+                <span>Generating explanation...</span>
+              </div>
+            ) : (
+              <div className="py-2 text-sm text-foreground/55 italic">
+                No explainable reasoning generated. Please re-run diagnostics to fetch LLM analysis.
+              </div>
+            )}
+          </GlassCard>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
+            <MetricCard
+            title="Defect Localization"
             score={inspection.factors.visualDefect}
-            subtitle="Hallmark & micro-engravings"
-            impact={-0.8}
-            reasoning="Analyzed surface engraving patterns and hallmarks. No toolmark anomalies or mismatching hallmarks detected."
-            status="Verified"
+            subtitle="Visible defects & image quality"
+            impact={defectDetails.status === "clean" ? -0.8 : 8.4}
+            reasoning={defectDetails.explanation}
+            status={defectDetails.status === "clean" ? "Verified" : "Defect"}
+            extraContent={
+              defectDetails.status === "clean" ? (
+                <div className="mt-3 flex items-center gap-1.5 text-xs text-[color:var(--success)] font-semibold bg-[color:var(--success)]/10 px-3 py-2 rounded-xl border border-[color:var(--success)]/15">
+                  <span className="size-2 rounded-full bg-[color:var(--success)] animate-pulse" />
+                  <span>No Defects Detected</span>
+                </div>
+              ) : (
+                <div className="mt-3 space-y-2 animate-float-in">
+                  <div className="text-[10px] font-bold uppercase tracking-wider text-foreground/45">Detected Defects:</div>
+                  <div className="flex flex-wrap gap-1.5">
+                    {defectDetails.defects.map((def: any) => (
+                      <span
+                        key={def.type}
+                        className="text-[10px] font-extrabold uppercase px-2 py-0.5 rounded-full bg-[color:var(--risk)]/10 text-[color:var(--risk)] border border-[color:var(--risk)]/15"
+                      >
+                        {def.type.replace("_", " ")} ({Math.round(def.confidence * 100)}%)
+                      </span>
+                    ))}
+                  </div>
+                </div>
+              )
+            }
           />
           <MetricCard
             title="Density Verification"
             score={inspection.factors.density}
             subtitle="Hydrostatic weight-volume check"
-            impact={0.0}
-            reasoning="Computed volumetric density matches pure gold standard within acceptable margins."
-            status="Verified"
+            impact={densityDetails.difference_percentage}
+            reasoning={`${densityDetails.explanation} (Calc: ${densityDetails.calculated_density} g/cm³, Exp: ${densityDetails.expected_density} g/cm³).${
+              densityDetails.possible_core_material && densityDetails.possible_core_material !== "None"
+                ? ` Core Threat: ${densityDetails.possible_core_material} detected.`
+                : ""
+            }`}
+            status={densityDetails.risk_level === "Normal" ? "Verified" : densityDetails.risk_level === "Suspicious" ? "Anomalous" : "Failed"}
           />
           <MetricCard
             title="Reflection Analysis"
@@ -462,18 +659,20 @@ function AiAnalysisTab({ inspection, aiStatus, setAiStatus, aiProgress, setAiPro
             status={inspection.status === "Genuine" || inspection.status === "Low Risk" ? "Verified" : "Low"}
           />
         </div>
+      </div>
       )}
     </div>
   );
 }
 
-function MetricCard({ title, score, subtitle, impact, reasoning, status }: {
+function MetricCard({ title, score, subtitle, impact, reasoning, status, extraContent }: {
   title: string;
   score: number;
   subtitle: string;
   impact: number;
   reasoning: string;
   status: string;
+  extraContent?: React.ReactNode;
 }) {
   const isGood = score >= 80;
   const color = isGood ? "var(--success)" : score >= 60 ? "var(--warning)" : "var(--risk)";
@@ -499,6 +698,8 @@ function MetricCard({ title, score, subtitle, impact, reasoning, status }: {
         <p className="text-xs text-foreground/60 leading-relaxed bg-white/30 border border-black/5 rounded-xl p-3">
           {reasoning}
         </p>
+        
+        {extraContent}
       </div>
 
       <div className="mt-4 flex items-center justify-between text-[11px] pt-3 border-t border-black/5">
@@ -608,6 +809,15 @@ function ReplayTab({ inspection }: { inspection: ReturnType<typeof useApp.getSta
   const events = inspection.audit;
   const [i, setI] = useState(events.length - 1);
   const e = events[i];
+
+  const availableAngles = useMemo(() => {
+    return Object.keys(inspection.images).filter(k => !!inspection.images[k as keyof typeof inspection.images]);
+  }, [inspection.images]);
+
+  const [reviewAngle, setReviewAngle] = useState(availableAngles[0] || "front");
+  const [visualObservations, setVisualObservations] = useState("");
+  const [loadingReview, setLoadingReview] = useState(false);
+
   return (
     <div className="grid grid-cols-1 lg:grid-cols-[280px_1fr] gap-6 animate-float-in">
       <GlassCard className="p-5">
@@ -639,7 +849,7 @@ function ReplayTab({ inspection }: { inspection: ReturnType<typeof useApp.getSta
           {["front", "back", "left", "right", "top", "reflection"].map((k) => (
             <div key={k} className="aspect-square rounded-xl bg-white border border-black/5 grid place-items-center overflow-hidden">
               {inspection.images[k as keyof typeof inspection.images] ? (
-                <img src={inspection.images[k as keyof typeof inspection.images]} className="w-full h-full object-cover" />
+                <img src={getImageUrl(inspection.images[k as keyof typeof inspection.images])} className="w-full h-full object-cover" />
               ) : (
                 <div className="text-center">
                   <ImageIcon className="size-5 mx-auto text-foreground/25" />
@@ -659,6 +869,70 @@ function ReplayTab({ inspection }: { inspection: ReturnType<typeof useApp.getSta
           <div className="text-[10px] uppercase tracking-wider text-foreground/45 font-semibold mb-1">Notes</div>
           <div className="text-sm">{inspection.notes}</div>
         </div>
+
+        {/* AI Visual Review Module */}
+        {availableAngles.length > 0 && (
+          <div className="mt-6 p-5 rounded-2xl bg-white/40 border border-black/5 space-y-4">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-2">
+                <Sparkles className="size-4 text-[color:var(--gold)]" />
+                <h4 className="text-sm font-bold text-foreground/75">AI Visual Review (Assistive Layer)</h4>
+              </div>
+            </div>
+            
+            <div className="flex items-center gap-3">
+              <select
+                value={reviewAngle}
+                onChange={(e) => setReviewAngle(e.target.value)}
+                className="h-10 px-3 rounded-xl border border-black/10 bg-white/50 text-sm font-medium focus:outline-none"
+              >
+                {availableAngles.map((k) => (
+                  <option key={k} value={k}>
+                    {k.toUpperCase()} angle
+                  </option>
+                ))}
+              </select>
+              <button
+                onClick={async () => {
+                  setLoadingReview(true);
+                  try {
+                    const res = await api.generateVisualReview(inspection.id, reviewAngle);
+                    setVisualObservations(res.observations);
+                    toast.success("AI Visual Review generated successfully.");
+                  } catch (err: any) {
+                    console.error("AI Visual Review failed:", err);
+                    toast.error(err.message || "Failed to generate visual review.");
+                  } finally {
+                    setLoadingReview(false);
+                  }
+                }}
+                disabled={loadingReview}
+                className="h-10 px-4 rounded-xl bg-[color:var(--gold)] text-white text-xs font-semibold flex items-center gap-2 hover:brightness-110 transition disabled:opacity-50"
+              >
+                {loadingReview ? (
+                  <>
+                    <div className="size-3.5 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                    <span>Analyzing...</span>
+                  </>
+                ) : (
+                  <>
+                    <Sparkles className="size-3.5" />
+                    <span>Generate AI Visual Review</span>
+                  </>
+                )}
+              </button>
+            </div>
+            
+            {visualObservations && (
+              <div className="p-4 rounded-xl bg-white border border-black/5 text-sm space-y-2 animate-float-in">
+                <div className="text-[10px] font-bold uppercase tracking-wider text-foreground/45">Visual Observations:</div>
+                <div className="whitespace-pre-line text-foreground/75 leading-relaxed">
+                  {visualObservations}
+                </div>
+              </div>
+            )}
+          </div>
+        )}
       </GlassCard>
     </div>
   );
@@ -714,13 +988,25 @@ function EvidenceVaultTab({ inspection }: { inspection: ReturnType<typeof useApp
     }, 1500);
   };
 
-  const handleGenerateReport = () => {
+  const handleGenerateReport = async () => {
     setGeneratingReport(true);
-    toast.info("Generating comprehensive PDF case report...");
-    setTimeout(() => {
+    try {
+      const blob = await api.downloadInspectionReportPdf(inspection.id);
+      const blobUrl = window.URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = blobUrl;
+      a.download = `${inspection.id}-report.pdf`;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      window.URL.revokeObjectURL(blobUrl);
+      toast.success("Investigation Report PDF generated and downloaded.");
+    } catch (err) {
+      console.error("Failed to generate report:", err);
+      toast.error("Failed to generate report. Please try again.");
+    } finally {
       setGeneratingReport(false);
-      toast.success("Investigation Report PDF generated and saved.");
-    }, 2000);
+    }
   };
 
   const handleExportBundle = () => {
@@ -788,7 +1074,7 @@ function EvidenceVaultTab({ inspection }: { inspection: ReturnType<typeof useApp
               {["front", "back", "left", "right", "top", "reflection", "touchstone"].map((k) => (
                 <div key={k} className="aspect-square rounded-lg overflow-hidden bg-white border border-black/5 grid place-items-center">
                   {inspection.images[k as keyof typeof inspection.images] ? (
-                    <img src={inspection.images[k as keyof typeof inspection.images]} className="w-full h-full object-cover" />
+                    <img src={getImageUrl(inspection.images[k as keyof typeof inspection.images])} className="w-full h-full object-cover" />
                   ) : <div className="text-[9px] uppercase font-semibold text-foreground/35">{k}</div>}
                 </div>
               ))}
