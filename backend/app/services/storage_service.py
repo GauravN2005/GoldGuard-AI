@@ -39,6 +39,8 @@ class LocalStorageService:
     def download_file(self, object_name: str) -> bytes:
         if object_name.startswith("local://"):
             rel_path = object_name.replace("local://", "")
+        elif object_name.startswith("supabase://"):
+            rel_path = object_name.replace("supabase://", "")
         elif object_name.startswith("s3://"):
             rel_path = object_name.split("/", 3)[-1]
         else:

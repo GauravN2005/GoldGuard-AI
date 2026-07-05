@@ -140,7 +140,11 @@ async def download_report(
             )
         
     try:
-        path_to_download = f"s3://{storage_service.bucket_name}/reports/{report.id}_report.pdf" if storage_service.enabled else f"local://uploads/reports/{report.id}_report.pdf"
+        from app.services.storage_service import SupabaseStorageService
+        if isinstance(storage_service, SupabaseStorageService):
+            path_to_download = f"supabase://reports/{report.id}_report.pdf"
+        else:
+            path_to_download = f"local://reports/{report.id}_report.pdf"
         pdf_data = storage_service.download_file(path_to_download)
     except Exception as e:
         raise HTTPException(
